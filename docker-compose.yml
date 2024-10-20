@@ -2,12 +2,12 @@ version: '3.8'
 
 services:
   backend:
-    build: .
+    build: ./backend  # Point to the new backend directory
     ports:
       - "3000:3000"
     volumes:
-      - .:/app
-      - /app/node_modules
+      - ./backend:/app  # Map the new backend directory to /app in the container
+      - /app/node_modules  # Ensure node_modules is handled correctly
     environment:
       - NODE_ENV=development
     depends_on:
@@ -19,7 +19,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./frontend:/app
+      - ./frontend:/app  # Volume for frontend project files
       - /app/node_modules
     environment:
       - NODE_ENV=development
