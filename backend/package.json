@@ -1,11 +1,9 @@
 {
-  "name": "kafka-transit-notifications",
+  "name": "backend",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js",
-    "dev": "nodemon index.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
@@ -14,11 +12,7 @@
   "dependencies": {
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
-    "kafka-node": "^5.0.0",
-    "mongoose": "^8.7.1",
-    "socket.io": "^4.8.0"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.7"
+    "kafkajs": "^2.2.4",
+    "mongodb": "^6.10.0"
   }
 }
