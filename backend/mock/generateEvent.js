@@ -2,9 +2,21 @@ const producer = require('../kafka/producer');
 
 // Transit line configurations
 const TRANSIT_LINES = [
-    { id: 'RED-LINE', name: 'Red Line', stops: ['A1', 'A2', 'A3', 'A4', 'A5'] },
-    { id: 'BLUE-LINE', name: 'Blue Line', stops: ['B1', 'B2', 'B3', 'B4', 'B5'] },
-    { id: 'GREEN-LINE', name: 'Green Line', stops: ['C1', 'C2', 'C3', 'C4'] }
+    {
+        id: 'BLUE',
+        name: 'Blue Line',
+        stops: ['Santa Teresa', 'Cottle', 'Snell', 'Blossom Hill', 'Ohlone/Chynoweth', 'Branham', 'Capitol', 'Curtner', 'Tamien', 'Virginia', "Children's Discovery Museum", 'Convention Center', 'Paseo de San Antonio', 'Santa Clara', 'St. James', 'Japantown/Ayer', 'Civic Center', 'Gish', 'Metro/Airport', 'Karina', 'Component', 'Bonaventura', 'Orchard', 'River Oaks', 'Tasman',, 'Reamwood', 'Vienna', 'Fair Oaks', 'Crossman', 'Borregas', 'Lockheed Martin', 'Baypointe']
+    },
+    {
+        id: 'GREEN',
+        name: 'Green Line',
+        stops: ['Winchester', 'Downtown Campbell', 'Hamilton', 'Bascom', 'Fruitdale', 'Race', 'San Jose Diridon', 'San Fernando', 'Paseo de San Antonio', 'Santa Clara', 'St. James', 'Japantown/Ayer', 'Civic Center', 'Gish', 'Metro/Airport', 'Karina', 'Component', 'Bonaventura', 'Orchard', 'River Oaks', 'Tasman', 'Champion', 'Great America', 'Old Ironsides']
+    },
+    {
+        id: 'ORANGE',
+        name: 'Orange Line',
+        stops: ['Mountain View', 'Whisman', 'Middlefield', 'Bayshore/NASA', 'Moffett Park', 'Lockheed Martin', 'Borregas', 'Crossman', 'Fair Oaks', 'Vienna', 'Reamwood', 'Old Ironsides', 'Great America', 'Lick Mill', 'Champion', 'Baypointe', 'Cisco Way', 'Alder', 'Great Mall', 'Milpitas', 'Cropley', 'Hostetter', 'Berryessa', 'Penitencia Creek', 'McKee', 'Alum Rock']
+    }
 ];
 
 const EVENT_TYPES = {
@@ -109,7 +121,6 @@ async function generateAndSendEvent() {
 
         console.log('Generating event:', event);
         await producer.sendEvent(event);
-        console.log('Event sent successfully');
 
     } catch (error) {
         console.error('Failed to generate and send event:', error);

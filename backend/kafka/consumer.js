@@ -1,35 +1,33 @@
 const kafka = require('kafka-node');
 const Consumer = kafka.Consumer;
 const client = new kafka.KafkaClient({ 
-    kafkaHost: 'kafka:29092', // Updated to match internal Docker network port
+    kafkaHost: 'kafka:29092',  // Changed to match your UI/producer port
     connectTimeout: 10000,
     requestTimeout: 30000,
-    autoConnect: true,
-    retry: {
-        retries: 5,
-        factor: 2,
-        minTimeout: 1000,
-        maxTimeout: 60000,
-        randomize: true,
-    }
+    autoConnect: true
 });
 
 let consumer = null;
 
-function initializeConsumer() {
-    if (consumer) {
-        try {
-            consumer.close(() => {
-                console.log('Existing consumer closed');
-                createNewConsumer();
-            });
-        } catch (error) {
-            console.error('Error closing existing consumer:', error);
-            createNewConsumer();
-        }
-    } else {
-        createNewConsumer();
-    }
+// First, create the topic with proper configs
+const topicToCreate = [{
+    topic: 'transit-events',
+    partitions: 1,
+    replicationFactor: 1
+}];
+
+async function createTopicIfNeeded() {
+    return new Promise((resolve, reject) => {
+        client.createTopics(topicToCreate, (error, result) => {
+            if (error) {
+                console.error('Error creating topic:', error);
+                reject(error);
+            } else {
+                console.log('Topic created or exists:', result);
+                resolve(result);
+            }
+        });
+    });
 }
 
 function createNewConsumer() {
@@ -38,37 +36,28 @@ function createNewConsumer() {
         [{ 
             topic: 'transit-events',
             partition: 0,
-            offset: -1
+            offset: 0  // Start from beginning
         }],
         {
+            groupId: 'transit-consumer-group-1',  // Unique group ID
             autoCommit: true,
             autoCommitIntervalMs: 5000,
-            fetchMaxWaitMs: 100,
-            fetchMinBytes: 1,
-            fetchMaxBytes: 1024 * 1024,
-            groupId: 'transit-consumer-group',
-            sessionTimeout: 15000,
-            protocol: ['roundrobin'],
-            fromOffset: 'latest',
-            encoding: 'utf8',
-            keyEncoding: 'utf8',
-            commitOffsetsOnFirstJoin: true,
-            outOfRangeOffset: 'earliest'
+            fromOffset: true,  // Important for offset management
+            fetchMaxBytes: 1024 * 1024
         }
     );
 
-    consumer.on('ready', function () {
+    consumer.on('ready', () => {
         console.log('Consumer is ready');
     });
 
-    consumer.on('message', async function (message) {
+    consumer.on('message', async (message) => {
         try {
             const event = JSON.parse(message.value);
             console.log('Received Event:', event);
             
             if (event.eventType === 'DELAY') {
-                console.log(`Alert! ${event.lineId} delayed at ${event.stopId}`);
-                // Add your event processing logic here
+                console.log(`Alert! ${event.lineName} delayed at ${event.stopId}`);
                 await processEvent(event);
             }
         } catch (error) {
@@ -76,59 +65,39 @@ function createNewConsumer() {
         }
     });
 
-    consumer.on('error', function (err) {
+    consumer.on('error', (err) => {
         console.error('Consumer Error:', err);
-        if (err.name === 'ConnectionError' || err.code === 'ECONNREFUSED') {
-            console.log('Connection error, attempting to reconnect...');
-            setTimeout(() => {
-                console.log('Attempting reconnection...');
-                initializeConsumer();
-            }, 5000);
-        }
     });
 
-    consumer.on('offsetOutOfRange', function (err) {
+    consumer.on('offsetOutOfRange', (err) => {
         console.error('Offset out of range:', err);
-        consumer.setOffset('transit-events', 0, 'earliest');
+        // Reset offset to earliest
+        consumer.setOffset('transit-events', 0, 0);
     });
 }
 
-// Example event processing function
 async function processEvent(event) {
     try {
-        // Add your business logic here
-        // For example, saving to database, sending notifications, etc.
         console.log('Processing event:', event);
     } catch (error) {
         console.error('Error processing event:', error);
-        throw error;
     }
 }
 
-// Graceful shutdown handling
 function cleanup() {
     if (consumer) {
-        try {
-            consumer.close(true, () => {
-                console.log('Consumer closed gracefully');
-                client.close(() => {
-                    console.log('Client closed gracefully');
-                    process.exit(0);
-                });
+        consumer.close(() => {
+            console.log('Consumer closed gracefully');
+            client.close(() => {
+                console.log('Client closed gracefully');
             });
-        } catch (error) {
-            console.error('Error during cleanup:', error);
-            process.exit(1);
-        }
-    } else {
-        process.exit(0);
+        });
     }
 }
 
 process.on('SIGTERM', cleanup);
 process.on('SIGINT', cleanup);
 
-// Monitor client connection
 client.on('ready', () => {
     console.log('Kafka client is ready');
 });
@@ -137,16 +106,14 @@ client.on('error', (error) => {
     console.error('Kafka client error:', error);
 });
 
-// Start the consumer
 async function start() {
     try {
-        initializeConsumer();
+        await createTopicIfNeeded();
+        createNewConsumer();
     } catch (error) {
         console.error('Failed to start consumer:', error);
         process.exit(1);
     }
 }
-
-start();
 
 module.exports = { start, cleanup };

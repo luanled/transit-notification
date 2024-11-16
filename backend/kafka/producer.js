@@ -3,7 +3,7 @@ const Producer = kafka.Producer;
 
 // Create a client with retry options
 const client = new kafka.KafkaClient({ 
-    kafkaHost: 'kafka:29092', // Updated to use internal port
+    kafkaHost: 'kafka:29092',
     connectTimeout: 10000,
     requestTimeout: 30000,
     autoConnect: true,
@@ -27,9 +27,9 @@ function initializeProducer() {
         }
 
         producer = new Producer(client, {
-            requireAcks: 1, // Wait for leader acknowledgment
+            requireAcks: 1,
             ackTimeoutMs: 100,
-            partitionerType: 2 // Use consistent random partitioner
+            partitionerType: 2
         });
 
         producer.on('ready', () => {
@@ -50,19 +50,22 @@ async function sendEvent(event) {
     try {
         await initializeProducer();
 
+        // Create topic name based on line ID
+        const topicName = `transit-events-${event.lineId}`;
+
         return new Promise((resolve, reject) => {
             const payloads = [{
-                topic: 'transit-events',
+                topic: topicName,
                 messages: JSON.stringify(event),
                 timestamp: Date.now()
             }];
 
             producer.send(payloads, (err, data) => {
                 if (err) {
-                    console.error('Error sending event:', err);
+                    console.error(`Error sending event to ${topicName}:`, err);
                     reject(err);
                 } else {
-                    console.log('Event sent successfully:', data);
+                    console.log(`Event sent successfully to ${topicName}:`, data);
                     resolve(data);
                 }
             });

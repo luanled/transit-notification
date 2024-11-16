@@ -9,13 +9,13 @@ const eventGenerator = require('./mock/generateEvent');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Middleware
+// Middleware setup remains the same...
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(morgan('dev')); // Logging middleware
+app.use(morgan('dev'));
 
-// Health check endpoint
+// Routes remain the same...
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'healthy',
@@ -24,7 +24,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Main route
 app.get('/', (req, res) => {
   res.json({
     message: 'Kafka Transit Notification System Backend',
@@ -36,11 +35,9 @@ app.get('/', (req, res) => {
   });
 });
 
-// API routes
 app.post('/api/events', async (req, res) => {
   try {
     const event = req.body;
-    // Basic validation
     if (!event.eventType || !event.lineId || !event.stopId) {
       return res.status(400).json({
         error: 'Missing required fields: eventType, lineId, stopId'
@@ -61,7 +58,7 @@ app.post('/api/events', async (req, res) => {
   }
 });
 
-// Error handling middleware
+// Error handling middleware remains the same...
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({
@@ -70,7 +67,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Handle 404
 app.use((req, res) => {
   res.status(404).json({
     error: 'Not Found',
@@ -78,42 +74,34 @@ app.use((req, res) => {
   });
 });
 
-// Graceful shutdown function
 function gracefulShutdown() {
   console.log('Starting graceful shutdown...');
   
-  // Create a promise that rejects after a timeout
   const shutdownTimeout = new Promise((_, reject) => {
-    setTimeout(() => {
-      reject(new Error('Shutdown timed out'));
-    }, 10000); // 10 seconds timeout
+    setTimeout(() => reject(new Error('Shutdown timed out')), 10000);
   });
 
-  // Actual shutdown logic
   const performShutdown = new Promise(async (resolve) => {
     try {
-      // Close Kafka producer
+      if (eventGenerator.isRunning()) {
+        eventGenerator.stopGenerator();
+      }
       if (producer.cleanup) {
         await producer.cleanup();
       }
-      
-      // Close Kafka consumer
       if (consumer.cleanup) {
         await consumer.cleanup();
       }
-      
-      // Close Express server
       server.close(() => {
         console.log('Express server closed');
         resolve();
       });
     } catch (error) {
       console.error('Error during shutdown:', error);
-      resolve(); // Resolve anyway to ensure we exit
+      resolve();
     }
   });
 
-  // Race between timeout and clean shutdown
   Promise.race([performShutdown, shutdownTimeout])
     .then(() => {
       console.log('Graceful shutdown completed');
@@ -125,27 +113,20 @@ function gracefulShutdown() {
     });
 }
 
-// Start server and initialize Kafka
 const server = app.listen(port, async () => {
   try {
     console.log(`Backend server running on port ${port}`);
     
-    // Initialize Kafka producer
-    if (producer.initializeProducer) {
-      await producer.initializeProducer();
-      console.log('Kafka producer initialized');
-    }
+    await producer.initializeProducer?.();
+    console.log('Kafka producer initialized');
     
-    // Start Kafka consumer
-    if (consumer.start) {
-      await consumer.start();
-      console.log('Kafka consumer started');
-    }
+    await consumer.start?.();
+    console.log('Kafka consumer started');
 
-    // Start mock event generator if in development mode
     if (process.env.NODE_ENV === 'development') {
-      require('./mock/generateEvent');
+      eventGenerator.startGenerator(10000);
       console.log('Mock event generator started');
+      console.log('Generator running:', eventGenerator.isRunning());
     }
   } catch (error) {
     console.error('Failed to initialize services:', error);
@@ -153,23 +134,15 @@ const server = app.listen(port, async () => {
   }
 });
 
-// Handle shutdown signals
 process.on('SIGTERM', gracefulShutdown);
 process.on('SIGINT', gracefulShutdown);
-
-// Handle uncaught errors
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);
   gracefulShutdown();
 });
-
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   gracefulShutdown();
 });
 
-eventGenerator.startGenerator(5000); // Every 5 seconds
-// Check if running
-console.log('Generator running:', eventGenerator.isRunning());
-
-module.exports = app; // Export for testing
+module.exports = app;
