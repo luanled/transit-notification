@@ -5,9 +5,11 @@ const morgan = require('morgan');
 const producer = require('./kafka/producer');
 const consumer = require('./kafka/consumer');
 const eventGenerator = require('./mock/generateEvent');
+const streamProcessor = require('./kafka/streamProcessor');
 
 const app = express();
 const port = process.env.PORT || 3000;
+const interval = 10000;
 
 // Middleware setup remains the same...
 app.use(cors());
@@ -58,6 +60,33 @@ app.post('/api/events', async (req, res) => {
   }
 });
 
+app.get('/api/analytics', async (req, res) => {
+  try {
+      const analytics = streamProcessor.getAnalytics();
+      
+      // Format the response with additional metadata
+      const response = {
+          timestamp: new Date().toISOString(),
+          messageCount: streamProcessor.messageCount,
+          analytics: {
+              delaysByLine: analytics.delaysByLine || {},
+              incidentsByStop: analytics.incidentsByStop || {},
+              serviceHealth: analytics.serviceHealth || {}
+          },
+          status: 'active',
+          consumingTopics: streamProcessor.topics.map(t => t.topic)
+      };
+
+      res.json(response);
+  } catch (error) {
+      console.error('Failed to fetch analytics:', error);
+      res.status(500).json({
+          error: 'Failed to fetch analytics',
+          details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+  }
+});
+
 // Error handling middleware remains the same...
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -78,59 +107,62 @@ function gracefulShutdown() {
   console.log('Starting graceful shutdown...');
   
   const shutdownTimeout = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error('Shutdown timed out')), 10000);
+      setTimeout(() => reject(new Error('Shutdown timed out')), 10000);
   });
 
   const performShutdown = new Promise(async (resolve) => {
-    try {
-      if (eventGenerator.isRunning()) {
-        eventGenerator.stopGenerator();
+      try {
+          if (eventGenerator.isRunning()) {
+              eventGenerator.stopGenerator();
+          }
+          if (producer.cleanup) {
+              await producer.cleanup();
+          }
+          if (consumer.cleanup) {
+              await consumer.cleanup();
+          }
+          await streamProcessor.shutdown();
+          server.close(() => {
+              console.log('Express server closed');
+              resolve();
+          });
+      } catch (error) {
+          console.error('Error during shutdown:', error);
+          resolve();
       }
-      if (producer.cleanup) {
-        await producer.cleanup();
-      }
-      if (consumer.cleanup) {
-        await consumer.cleanup();
-      }
-      server.close(() => {
-        console.log('Express server closed');
-        resolve();
-      });
-    } catch (error) {
-      console.error('Error during shutdown:', error);
-      resolve();
-    }
   });
 
   Promise.race([performShutdown, shutdownTimeout])
-    .then(() => {
-      console.log('Graceful shutdown completed');
-      process.exit(0);
-    })
-    .catch((error) => {
-      console.error('Shutdown error:', error);
-      process.exit(1);
-    });
+      .then(() => {
+          console.log('Graceful shutdown completed');
+          process.exit(0);
+      })
+      .catch((error) => {
+          console.error('Shutdown error:', error);
+          process.exit(1);
+      });
 }
 
 const server = app.listen(port, async () => {
   try {
-    console.log(`Backend server running on port ${port}`);
-    
-    await producer.initializeProducer?.();
-    console.log('Kafka producer initialized');
-    
-    await consumer.start?.();
-    console.log('Kafka consumer started');
+      console.log(`Backend server running on port ${port}`);
+      
+      await producer.initializeProducer?.();
+      console.log('Kafka producer initialized');
+      
+      await consumer.start?.();
+      console.log('Kafka consumer started');
 
-    if (process.env.NODE_ENV === 'development') {
-      eventGenerator.startGenerator(10000);
-      console.log('Mock event generator started');
-      console.log('Generator running:', eventGenerator.isRunning());
-    }
+      await streamProcessor.start();
+      console.log('Stream processor started');
+
+      if (process.env.NODE_ENV === 'development') {
+          eventGenerator.startGenerator(interval);
+          console.log('Mock event generator started');
+      }
   } catch (error) {
-    console.error('Failed to initialize services:', error);
-    process.exit(1);
+      console.error('Failed to initialize services:', error);
+      process.exit(1);
   }
 });
 
