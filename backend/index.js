@@ -11,13 +11,48 @@ const app = express();
 const port = process.env.PORT || 3000;
 const interval = 10000;
 
-// Middleware setup remains the same...
-app.use(cors());
+// Middleware setup
+app.use(cors({
+  origin: 'http://localhost:8080', // Your frontend URL
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
-// Routes remain the same...
+// SSE endpoint for real-time analytics
+app.get('/api/analytics/stream', (req, res) => {
+  console.log('Client connected to SSE');
+  
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': 'http://localhost:8080'
+  });
+
+  // Send initial data immediately
+  const initialData = streamProcessor.getAnalytics();
+  console.log('Sending initial SSE data:', initialData);
+  res.write(`data: ${JSON.stringify(initialData)}\n\n`);
+
+  // Function to send updates
+  const sendUpdate = (data) => {
+    console.log('Sending SSE update:', data);
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+
+  // Subscribe to updates
+  streamProcessor.on('dataUpdated', sendUpdate);
+
+  // Clean up on client disconnect
+  req.on('close', () => {
+    console.log('Client disconnected from SSE');
+    streamProcessor.removeListener('dataUpdated', sendUpdate);
+  });
+});
+
+// Regular routes
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'healthy',
@@ -32,7 +67,8 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     endpoints: {
       health: '/health',
-      events: '/api/events'
+      events: '/api/events',
+      analytics: '/api/analytics/stream'
     }
   });
 });
@@ -60,34 +96,7 @@ app.post('/api/events', async (req, res) => {
   }
 });
 
-app.get('/api/analytics', async (req, res) => {
-  try {
-      const analytics = streamProcessor.getAnalytics();
-      
-      // Format the response with additional metadata
-      const response = {
-          timestamp: new Date().toISOString(),
-          messageCount: streamProcessor.messageCount,
-          analytics: {
-              delaysByLine: analytics.delaysByLine || {},
-              incidentsByStop: analytics.incidentsByStop || {},
-              serviceHealth: analytics.serviceHealth || {}
-          },
-          status: 'active',
-          consumingTopics: streamProcessor.topics.map(t => t.topic)
-      };
-
-      res.json(response);
-  } catch (error) {
-      console.error('Failed to fetch analytics:', error);
-      res.status(500).json({
-          error: 'Failed to fetch analytics',
-          details: process.env.NODE_ENV === 'development' ? error.message : undefined
-      });
-  }
-});
-
-// Error handling middleware remains the same...
+// Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({

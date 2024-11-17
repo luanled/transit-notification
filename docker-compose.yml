@@ -12,24 +12,7 @@ services:
       - NODE_ENV=development
     depends_on:
       - kafka
-      - mongo
-
-  frontend:
-    build: ./frontend
-    ports:
-      - "8080:8080"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    environment:
-      - NODE_ENV=development
-
-  mongo:
-    image: mongo
-    ports:
-      - "27017:27017"
-    volumes:
-      - ./data/db:/data/db
+      - ksqldb-server
 
   zookeeper:
     image: wurstmeister/zookeeper
@@ -53,10 +36,24 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
       KAFKA_CREATE_TOPICS: "transit-events:1:1"
-      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
-      KAFKA_NUM_PARTITIONS: 1
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+
+  ksqldb-server:
+    image: confluentinc/cp-ksqldb-server:7.5.1
+    hostname: ksqldb-server
+    depends_on:
+      - kafka
+    ports:
+      - "8088:8088"
+    environment:
+      KSQL_BOOTSTRAP_SERVERS: "kafka:29092"
+      KSQL_HOST_NAME: ksqldb-server
+      KSQL_LISTENERS: "http://0.0.0.0:8088"
+      KSQL_CACHE_MAX_BYTES_BUFFERING: 0
+      KSQL_KSQL_SERVICE_ID: "transit_ksql_"
+      KSQL_KSQL_SINK_PARTITIONS: 1
+      KSQL_KSQL_STREAMS_REPLICATION_FACTOR: 1
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
@@ -65,7 +62,8 @@ services:
     depends_on:
       - kafka
       - zookeeper
+      - ksqldb-server
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
-      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+      KAFKA_CLUSTERS_0_KSQLDBSERVER: http://ksqldb-server:8088

@@ -1,8 +1,9 @@
-// streamProcessor.js
 const kafka = require('kafka-node');
+const EventEmitter = require('events');
 
-class TransitStreamProcessor {
+class TransitStreamProcessor extends EventEmitter {
     constructor() {
+        super();
         this.client = new kafka.KafkaClient({ 
             kafkaHost: 'kafka:29092',
             connectTimeout: 10000,
@@ -19,7 +20,6 @@ class TransitStreamProcessor {
         this.consumer = null;
         this.messageCount = 0;
         
-        // Define topics to consume from
         this.topics = [
             { topic: 'transit-events-BLUE', partition: 0 },
             { topic: 'transit-events-GREEN', partition: 0 },
@@ -75,11 +75,26 @@ class TransitStreamProcessor {
                     incidentsByStopCount: this.analytics.incidentsByStop.size,
                     serviceHealthCount: this.analytics.serviceHealth.size
                 });
+                // Emit current state
+                this.emit('dataUpdated', this.getAnalytics());
             }, 30000);
 
             console.log('Stream processor started successfully');
         } catch (error) {
             console.error('Failed to start stream processor:', error);
+            throw error;
+        }
+    }
+
+    async shutdown() {
+        try {
+            if (this.consumer) {
+                await new Promise((resolve) => this.consumer.close(resolve));
+            }
+            await new Promise((resolve) => this.client.close(resolve));
+            console.log('Stream processor shut down successfully');
+        } catch (error) {
+            console.error('Error during stream processor shutdown:', error);
             throw error;
         }
     }
@@ -96,24 +111,22 @@ class TransitStreamProcessor {
 
             // Process delays
             if (event.eventType === 'DELAY') {
-                console.log('Processing delay event for line:', event.lineId);
                 this.processDelay(event);
             }
 
             // Process incidents
             if (['DELAY', 'CANCELLATION'].includes(event.eventType)) {
-                console.log('Processing incident event for stop:', event.stopId);
                 this.processIncident(event);
             }
 
             // Update service health
             this.updateServiceHealth(event);
 
-            // Log current state after processing
-            console.log('Updated analytics state for lineId:', event.lineId);
+            // Emit the dataUpdated event with current analytics
+            this.emit('dataUpdated', this.getAnalytics());
+            console.log('Emitted dataUpdated event');
         } catch (error) {
             console.error('Error processing message:', error);
-            console.error('Raw message:', message);
         }
     }
 
@@ -124,19 +137,16 @@ class TransitStreamProcessor {
             delays: []
         };
 
-        // Add new delay to the array
         currentStats.delays.push({
             delay: event.delayMinutes,
             timestamp: new Date(event.timestamp || Date.now())
         });
 
-        // Remove delays older than window size
         const now = new Date();
         currentStats.delays = currentStats.delays.filter(d => 
             now - d.timestamp <= this.windowSize
         );
 
-        // Calculate new average
         currentStats.avgDelay = currentStats.delays.reduce((sum, d) => 
             sum + d.delay, 0) / currentStats.delays.length || 0;
         
@@ -144,7 +154,6 @@ class TransitStreamProcessor {
         currentStats.lastUpdated = event.timestamp || new Date().toISOString();
 
         this.analytics.delaysByLine.set(event.lineId, currentStats);
-        console.log(`Updated delays for line ${event.lineId}:`, currentStats);
     }
 
     processIncident(event) {
@@ -158,7 +167,6 @@ class TransitStreamProcessor {
             timestamp: new Date(event.timestamp || Date.now())
         });
 
-        // Remove incidents older than window size
         const now = new Date();
         currentStats.incidents = currentStats.incidents.filter(i => 
             now - i.timestamp <= this.windowSize
@@ -168,7 +176,6 @@ class TransitStreamProcessor {
         currentStats.lastIncident = event.timestamp || new Date().toISOString();
 
         this.analytics.incidentsByStop.set(event.stopId, currentStats);
-        console.log(`Updated incidents for stop ${event.stopId}:`, currentStats);
     }
 
     updateServiceHealth(event) {
@@ -185,13 +192,11 @@ class TransitStreamProcessor {
             timestamp: new Date(event.timestamp || Date.now())
         });
 
-        // Remove events older than window size
         const now = new Date();
         currentHealth.events = currentHealth.events.filter(e => 
             now - e.timestamp <= this.windowSize
         );
 
-        // Calculate health score based on recent events
         const totalEvents = currentHealth.events.length;
         const healthyEvents = currentHealth.events.filter(e => e.isHealthy).length;
         
@@ -202,7 +207,6 @@ class TransitStreamProcessor {
         currentHealth.lastUpdated = event.timestamp || new Date().toISOString();
 
         this.analytics.serviceHealth.set(event.lineId, currentHealth);
-        console.log(`Updated health for line ${event.lineId}:`, currentHealth);
     }
 
     getAnalytics() {
@@ -213,21 +217,13 @@ class TransitStreamProcessor {
             serviceHealth: Object.fromEntries(this.analytics.serviceHealth)
         };
 
-        console.log('Current analytics state:', analytics);
-        return analytics;
-    }
-
-    async shutdown() {
-        try {
-            if (this.consumer) {
-                await new Promise((resolve) => this.consumer.close(resolve));
-            }
-            await new Promise((resolve) => this.client.close(resolve));
-            console.log('Stream processor shut down successfully');
-        } catch (error) {
-            console.error('Error during stream processor shutdown:', error);
-            throw error;
-        }
+        return {
+            timestamp: new Date().toISOString(),
+            messageCount: this.messageCount,
+            analytics: analytics,
+            status: 'active',
+            consumingTopics: this.topics.map(t => t.topic)
+        };
     }
 }
 

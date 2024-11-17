@@ -1,6 +1,6 @@
 # Kafka Transit Notification System
 
-A real-time public transportation notification system using Kafka, NodeJS, ExpressJS, VueJS, MongoDB, and Docker.
+A real-time public transportation notification system using Kafka, ksqlDB, NodeJS, ExpressJS, NextJS, and Docker.
 
 ## Setup Instructions
 
@@ -12,7 +12,7 @@ A real-time public transportation notification system using Kafka, NodeJS, Expre
 
 - NodeJS
 - ExpressJS
-- VueJS
-- MongoDB
+- NextJS
 - Kafka
+- ksqlDB
 - Docker
