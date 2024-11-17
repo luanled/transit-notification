@@ -1,5 +1,7 @@
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,8 +40,11 @@ export function SiteHeader() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          <Link href="/" className="font-semibold text-gray-900">
-            Transit System
+          <Link href="/" className="flex items-center space-x-2 font-semibold">
+            <span className="flex text-xl">
+              <span className="text-gray-900">Rail</span>
+              <span className="text-blue-500">Watch</span>
+            </span>
           </Link>
         </div>
 

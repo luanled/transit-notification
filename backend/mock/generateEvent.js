@@ -5,17 +5,17 @@ const TRANSIT_LINES = [
     {
         id: 'BLUE',
         name: 'Blue Line',
-        stops: ['Santa Teresa', 'Cottle', 'Snell', 'Blossom Hill', 'Ohlone/Chynoweth', 'Branham', 'Capitol', 'Curtner', 'Tamien', 'Virginia', "Children's Discovery Museum", 'Convention Center', 'Paseo de San Antonio', 'Santa Clara', 'St. James', 'Japantown/Ayer', 'Civic Center', 'Gish', 'Metro/Airport', 'Karina', 'Component', 'Bonaventura', 'Orchard', 'River Oaks', 'Tasman',, 'Reamwood', 'Vienna', 'Fair Oaks', 'Crossman', 'Borregas', 'Lockheed Martin', 'Baypointe']
+        stops: ['Santa Teresa', 'Cottle', 'Snell', 'Blossom Hill', 'Ohlone/Chynoweth', 'Branham', 'Capitol', 'Curtner', 'Tamien', 'Virginia', "Children's Discovery Museum", 'Convention Center-B', 'Paseo de San Antonio-B', 'Santa Clara-B', 'St. James-B', 'Japantown/Ayer-B', 'Civic Center-B', 'Gish-B', 'Metro/Airport-B', 'Karina-B', 'Component-B', 'Bonaventura-B', 'Orchard-B', 'River Oaks-B', 'Tasman-B', 'Baypointe-B']
     },
     {
         id: 'GREEN',
         name: 'Green Line',
-        stops: ['Winchester', 'Downtown Campbell', 'Hamilton', 'Bascom', 'Fruitdale', 'Race', 'San Jose Diridon', 'San Fernando', 'Paseo de San Antonio', 'Santa Clara', 'St. James', 'Japantown/Ayer', 'Civic Center', 'Gish', 'Metro/Airport', 'Karina', 'Component', 'Bonaventura', 'Orchard', 'River Oaks', 'Tasman', 'Champion', 'Great America', 'Old Ironsides']
+        stops: ['Winchester', 'Downtown Campbell', 'Hamilton', 'Bascom', 'Fruitdale', 'Race', 'San Jose Diridon', 'San Fernando', 'Convention Center-G', 'Paseo de San Antonio-G', 'Santa Clara-G', 'St. James-G', 'Japantown/Ayer-G', 'Civic Center-G', 'Gish-G', 'Metro/Airport-G', 'Karina-G', 'Component-G', 'Bonaventura-G', 'Orchard-G', 'River Oaks-G', 'Tasman-G', 'Champion-G', 'Lick Mill-G', 'Great America-G', 'Old Ironsides-G']
     },
     {
         id: 'ORANGE',
         name: 'Orange Line',
-        stops: ['Mountain View', 'Whisman', 'Middlefield', 'Bayshore/NASA', 'Moffett Park', 'Lockheed Martin', 'Borregas', 'Crossman', 'Fair Oaks', 'Vienna', 'Reamwood', 'Old Ironsides', 'Great America', 'Lick Mill', 'Champion', 'Baypointe', 'Cisco Way', 'Alder', 'Great Mall', 'Milpitas', 'Cropley', 'Hostetter', 'Berryessa', 'Penitencia Creek', 'McKee', 'Alum Rock']
+        stops: ['Mountain View', 'Whisman', 'Middlefield', 'Bayshore NASA', 'Moffett Park', 'Lockheed Martin', 'Borregas', 'Crossman', 'Fair Oaks', 'Vienna', 'Reamwood', 'Old Ironsides-O', 'Great America-O', 'Lick Mill-O', 'Champion-O', 'Baypointe-O', 'Cisco Way', 'Alder', 'Great Mall', 'Milpitas', 'Cropley', 'Hostetter', 'Berryessa', 'Penitencia Creek', 'McKee', 'Alum Rock']
     }
 ];
 

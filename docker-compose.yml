@@ -10,14 +10,24 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=development
+      - CASSANDRA_HOST=cassandra
+      - CASSANDRA_PORT=9042
+      - CASSANDRA_KEYSPACE=transit_system
+      - CASSANDRA_DC=datacenter1
+      - CASSANDRA_USERNAME=cassandra
+      - CASSANDRA_PASSWORD=cassandra
     depends_on:
       - kafka
-      - ksqldb-server
+      - cassandra
+    networks:
+      - app-network
 
   zookeeper:
     image: wurstmeister/zookeeper
     ports:
       - "2181:2181"
+    networks:
+      - app-network
 
   kafka:
     image: wurstmeister/kafka
@@ -35,25 +45,40 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
-      KAFKA_CREATE_TOPICS: "transit-events:1:1"
+      KAFKA_CREATE_TOPICS: "transit-events-BLUE:1:1,transit-events-GREEN:1:1,transit-events-ORANGE:1:1"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - app-network
 
-  ksqldb-server:
-    image: confluentinc/cp-ksqldb-server:7.5.1
-    hostname: ksqldb-server
-    depends_on:
-      - kafka
+  cassandra:
+    image: cassandra:4.1
     ports:
-      - "8088:8088"
+      - "9042:9042"
     environment:
-      KSQL_BOOTSTRAP_SERVERS: "kafka:29092"
-      KSQL_HOST_NAME: ksqldb-server
-      KSQL_LISTENERS: "http://0.0.0.0:8088"
-      KSQL_CACHE_MAX_BYTES_BUFFERING: 0
-      KSQL_KSQL_SERVICE_ID: "transit_ksql_"
-      KSQL_KSQL_SINK_PARTITIONS: 1
-      KSQL_KSQL_STREAMS_REPLICATION_FACTOR: 1
+      - CASSANDRA_CLUSTER_NAME=transit_cluster
+      - CASSANDRA_DC=datacenter1
+      - CASSANDRA_ENDPOINT_SNITCH=SimpleSnitch
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    healthcheck:
+      test: ["CMD", "cqlsh", "-u", "cassandra", "-p", "cassandra", "-e", "describe keyspaces"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+    networks:
+      - app-network
+
+  cassandra-init:
+    image: cassandra:4.1
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    volumes:
+      - ./backend/database/init.cql:/init.cql
+    command: /bin/bash -c "cqlsh cassandra -f /init.cql"
+    networks:
+      - app-network
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
@@ -62,8 +87,15 @@ services:
     depends_on:
       - kafka
       - zookeeper
-      - ksqldb-server
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
-      KAFKA_CLUSTERS_0_KSQLDBSERVER: http://ksqldb-server:8088
+    networks:
+      - app-network
+
+volumes:
+  cassandra_data:
+
+networks:
+  app-network:
+    driver: bridge
