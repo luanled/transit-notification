@@ -217,7 +217,7 @@ export function IncidentsList({ incidents }: IncidentsListProps) {
           ([stop, data]) =>
             data.count > 0 && (
               <div key={stop} className="relative">
-                <Alert 
+                <Alert
                   variant="default"
                   className={cn(
                     "border-2 rounded-r-lg",
@@ -242,7 +242,7 @@ export function IncidentsList({ incidents }: IncidentsListProps) {
                     </div>
                   </div>
                 </Alert>
-                <div 
+                <div
                   className={cn(
                     "absolute right-0 top-0 bottom-0 w-8 rounded-r-lg",
                     STATION_TO_LINE[stop] === 'BLUE' && "bg-blue-500",

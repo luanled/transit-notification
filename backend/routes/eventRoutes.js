@@ -98,10 +98,9 @@ router.get('/station/:stopId', async (req, res) => {
         const query = `
             SELECT * FROM transit_system.transit_events 
             WHERE stop_id = ? 
-            ALLOW FILTERING 
-            LIMIT ?`;
+            ALLOW FILTERING`;
         
-        const result = await cassandraService.client.execute(query, [stopId, limit], { prepare: true });
+        const result = await cassandraService.client.execute(query, [stopId], { prepare: true });
         
         res.json({
             station: stopId,
