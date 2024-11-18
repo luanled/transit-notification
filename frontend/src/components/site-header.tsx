@@ -31,9 +31,9 @@ export function SiteHeader() {
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard">Dashboard</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
+                {/* <DropdownMenuItem asChild>
                   <Link href="/alerts">Alerts</Link>
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
                 <DropdownMenuItem asChild>
                   <Link href="/stations">Stations</Link>
                 </DropdownMenuItem>
@@ -56,12 +56,12 @@ export function SiteHeader() {
             >
               Dashboard
             </Link>
-            <Link
+            {/* <Link
               href="/alerts"
               className="text-sm text-gray-700 hover:text-gray-900"
             >
               Alerts
-            </Link>
+            </Link> */}
             <Link
               href="/stations"
               className="text-sm text-gray-700 hover:text-gray-900"
@@ -69,9 +69,9 @@ export function SiteHeader() {
               Stations
             </Link>
           </div>
-          <Button variant="ghost" className="text-gray-700 hover:text-gray-900">
+          {/* <Button variant="ghost" className="text-gray-700 hover:text-gray-900">
             Sign In
-          </Button>
+          </Button> */}
         </nav>
       </div>
     </header>

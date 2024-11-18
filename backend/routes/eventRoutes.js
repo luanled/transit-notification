@@ -2,6 +2,41 @@ const express = require('express');
 const router = express.Router();
 const cassandraService = require('../database/cassandraService');
 
+// Get event by ID
+router.get('/:eventId', async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        
+        const query = `
+            SELECT * FROM transit_system.transit_events 
+            WHERE event_id = ? 
+            ALLOW FILTERING`;
+        
+        const result = await cassandraService.client.execute(query, [eventId], { prepare: true });
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+
+        const event = result.rows[0];
+        res.json({
+            eventId: event.event_id,
+            eventType: event.event_type,
+            lineId: event.line_id,
+            stopId: event.stop_id,
+            timestamp: event.timestamp,
+            status: event.status,
+            reason: event.reason,
+            delayMinutes: event.delay_minutes,
+            weather: event.weather,
+            scheduledTime: event.scheduled_time,
+            actualTime: event.actual_time
+        });
+    } catch (error) {
+        console.error('Error fetching event by ID:', error);
+        res.status(500).json({ error: 'Failed to fetch event details' });
+    }
+});
 // Get events for a specific line, sorted by timestamp
 router.get('/line/:lineId', async (req, res) => {
     try {

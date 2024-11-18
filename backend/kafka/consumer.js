@@ -44,29 +44,7 @@ async function createTopicIfNeeded() {
 
 async function processEvent(event) {
     try {
-        console.log('Processing event before storage:', {
-            eventId: event.eventId,
-            eventType: event.eventType,
-            lineId: event.lineId,
-            timestamp: event.timestamp
-        });
-
         await cassandraService.storeEvent(event);
-        console.log('Event successfully stored in Cassandra');
-
-        // Verify the event was stored
-        const verifyQuery = `
-            SELECT * FROM transit_system.transit_events 
-            WHERE line_id = ? AND timestamp = ? AND event_id = ?
-        `;
-        const params = [event.lineId, new Date(event.timestamp), event.eventId];
-        const result = await cassandraService.client.execute(verifyQuery, params, { prepare: true });
-
-        if (result.rows.length > 0) {
-            console.log('Event verification successful:', result.rows[0]);
-        } else {
-            console.warn('Event not found in verification check');
-        }
     } catch (error) {
         console.error('Error processing event:', error);
         throw error;
@@ -121,14 +99,15 @@ function createNewConsumer() {
 
     consumer.on('message', async (message) => {
         try {
-            console.log('Received message from topic:', message.topic);
             const event = JSON.parse(message.value);
-            console.log('Parsed Event:', event);
 
             await processEvent(event);
 
             if (event.eventType === 'DELAY') {
                 console.log(`Alert! ${event.lineName} delayed at ${event.stopId}`);
+            }
+            if (event.eventType === 'CANCELLATION') {
+                console.log(`Alert! ${event.lineName} cancelled at ${event.stopId}`);
             }
         } catch (error) {
             console.error('Error processing message:', error);

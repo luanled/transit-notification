@@ -118,8 +118,6 @@ async function generateAndSendEvent() {
                 'Rain', 'Snow', 'Clear', 'Foggy', 'Stormy'
             ]);
         }
-
-        console.log('Generating event:', event);
         await producer.sendEvent(event);
 
     } catch (error) {

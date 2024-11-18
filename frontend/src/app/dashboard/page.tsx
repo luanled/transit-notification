@@ -5,6 +5,8 @@ import { LineStatusCard } from "@/components/dashboard/LineStatusCard"
 import { IncidentsList } from "@/components/dashboard/IncidentsList"
 import { SystemStats } from "@/components/dashboard/SystemStats"
 
+type EventType = 'DELAY' | 'CANCELLATION';
+
 interface Analytics {
   timestamp: string
   messageCount: number
@@ -12,17 +14,42 @@ interface Analytics {
     delaysByLine: Record<string, {
       avgDelay: number
       count: number
-      delays: Array<{ delay: number; timestamp: string }>
+      delays: Array<{ 
+        eventId: string
+        delay: number
+        timestamp: string 
+      }>
       lastUpdated: string
+    }>
+    cancelsByLine: Record<string, {
+      count: number
+      cancellations: Array<{ 
+        eventId: string
+        timestamp: string
+        reason: string 
+      }>
+      lastCancellation: string
     }>
     incidentsByStop: Record<string, {
       count: number
-      incidents: Array<{ type: string; timestamp: string }>
+      incidents: Array<{ 
+        eventId: string
+        type: EventType
+        timestamp: string
+        reason?: string
+        delayMinutes?: number
+      }>
       lastIncident: string
+      type: EventType
+      lastEventId: string
     }>
     serviceHealth: Record<string, {
       healthScore: number
-      events: Array<{ isHealthy: boolean; timestamp: string }>
+      events: Array<{ 
+        eventId: string
+        isHealthy: boolean
+        timestamp: string 
+      }>
       lastUpdated: string
     }>
   }
@@ -90,6 +117,7 @@ export default function DashboardPage() {
             line={line}
             health={health}
             delay={data.analytics.delaysByLine[line]}
+            cancellations={data.analytics.cancelsByLine[line]}
           />
         ))}
       </div>

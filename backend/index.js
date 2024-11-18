@@ -35,12 +35,10 @@ app.get('/api/analytics/stream', (req, res) => {
 
   // Send initial data immediately
   const initialData = streamProcessor.getAnalytics();
-  console.log('Sending initial SSE data:', initialData);
   res.write(`data: ${JSON.stringify(initialData)}\n\n`);
 
   // Function to send updates
   const sendUpdate = (data) => {
-    console.log('Sending SSE update:', data);
     res.write(`data: ${JSON.stringify(data)}\n\n`);
   };
 

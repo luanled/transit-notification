@@ -66,7 +66,6 @@ class CassandraService {
 
     async storeEvent(event) {
         try {
-            console.log('Preparing to store event:', event);
             const params = [
                 event.eventId,
                 event.eventType,
@@ -81,8 +80,6 @@ class CassandraService {
                 event.weather || null,
                 new Date(event.timestamp)
             ];
-
-            console.log('Executing insert with params:', params);
             await this.client.execute(this.insertQuery, params, { prepare: true });
             console.log('Insert successful for event:', event.eventId);
 

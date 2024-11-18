@@ -1,5 +1,6 @@
 const kafka = require('kafka-node');
 const EventEmitter = require('events');
+const cassandraService = require('../database/cassandraService');
 
 class TransitStreamProcessor extends EventEmitter {
     constructor() {
@@ -12,6 +13,7 @@ class TransitStreamProcessor extends EventEmitter {
         
         this.analytics = {
             delaysByLine: new Map(),
+            cancelsByLine: new Map(),
             incidentsByStop: new Map(),
             serviceHealth: new Map()
         };
@@ -48,7 +50,6 @@ class TransitStreamProcessor extends EventEmitter {
             // Add detailed event handlers
             consumer.on('message', (message) => {
                 this.messageCount++;
-                console.log(`Processing message #${this.messageCount} from topic ${message.topic}:`, message.value);
                 this.processMessage(message);
             });
 
@@ -64,7 +65,6 @@ class TransitStreamProcessor extends EventEmitter {
 
             consumer.on('ready', () => {
                 console.log('Stream processor consumer is ready');
-                console.log('Consuming from topics:', this.topics.map(t => t.topic));
             });
 
             // Monitor processing status
@@ -102,9 +102,8 @@ class TransitStreamProcessor extends EventEmitter {
     processMessage(message) {
         try {
             const event = JSON.parse(message.value);
-            console.log('Parsed event:', event);
             
-            if (!event.eventType || !event.lineId) {
+            if (!event.eventType || !event.lineId || !event.eventId) {
                 console.warn('Invalid event format:', event);
                 return;
             }
@@ -113,7 +112,9 @@ class TransitStreamProcessor extends EventEmitter {
             if (event.eventType === 'DELAY') {
                 this.processDelay(event);
             }
-
+            if (event.eventType === 'CANCELLATION') {
+                this.processCancellation(event);
+            }
             // Process incidents
             if (['DELAY', 'CANCELLATION'].includes(event.eventType)) {
                 this.processIncident(event);
@@ -124,7 +125,6 @@ class TransitStreamProcessor extends EventEmitter {
 
             // Emit the dataUpdated event with current analytics
             this.emit('dataUpdated', this.getAnalytics());
-            console.log('Emitted dataUpdated event');
         } catch (error) {
             console.error('Error processing message:', error);
         }
@@ -138,8 +138,9 @@ class TransitStreamProcessor extends EventEmitter {
         };
 
         currentStats.delays.push({
+            eventId: event.eventId,
             delay: event.delayMinutes,
-            timestamp: new Date(event.timestamp || Date.now())
+            timestamp: new Date(event.timestamp || Date.now()) 
         });
 
         const now = new Date();
@@ -156,15 +157,43 @@ class TransitStreamProcessor extends EventEmitter {
         this.analytics.delaysByLine.set(event.lineId, currentStats);
     }
 
+    processCancellation(event) {
+        const currentStats = this.analytics.cancelsByLine.get(event.lineId) || {
+            count: 0,
+            cancellations: [],
+            lastCancellation: null
+        };
+
+        currentStats.cancellations.push({
+            eventId: event.eventId,
+            timestamp: new Date(event.timestamp || Date.now()),
+            reason: event.reason || 'Unknown'
+        });
+
+        const now = new Date();
+        currentStats.cancellations = currentStats.cancellations.filter(c => 
+            now - c.timestamp <= this.windowSize
+        );
+
+        currentStats.count = currentStats.cancellations.length;
+        currentStats.lastCancellation = event.timestamp || new Date().toISOString();
+
+        this.analytics.cancelsByLine.set(event.lineId, currentStats);
+    }
+
     processIncident(event) {
         const currentStats = this.analytics.incidentsByStop.get(event.stopId) || {
             count: 0,
-            incidents: []
+            incidents: [],
+            type: event.eventType
         };
 
         currentStats.incidents.push({
+            eventId: event.eventId,
             type: event.eventType,
-            timestamp: new Date(event.timestamp || Date.now())
+            timestamp: new Date(event.timestamp || Date.now()),
+            reason: event.reason || null,
+            delayMinutes: event.delayMinutes || null
         });
 
         const now = new Date();
@@ -174,6 +203,8 @@ class TransitStreamProcessor extends EventEmitter {
 
         currentStats.count = currentStats.incidents.length;
         currentStats.lastIncident = event.timestamp || new Date().toISOString();
+        currentStats.type = event.eventType;
+        currentStats.lastEventId = event.eventId;
 
         this.analytics.incidentsByStop.set(event.stopId, currentStats);
     }
@@ -188,6 +219,7 @@ class TransitStreamProcessor extends EventEmitter {
                          (event.eventType !== 'DELAY' || event.delayMinutes < 15);
 
         currentHealth.events.push({
+            eventId: event.eventId,
             isHealthy,
             timestamp: new Date(event.timestamp || Date.now())
         });
@@ -209,10 +241,43 @@ class TransitStreamProcessor extends EventEmitter {
         this.analytics.serviceHealth.set(event.lineId, currentHealth);
     }
 
+    async getIncidentDetails(eventId) {
+        try {
+            const query = `
+                SELECT * FROM transit_system.transit_events 
+                WHERE event_id = ? 
+                ALLOW FILTERING
+            `;
+            const result = await cassandraService.client.execute(query, [eventId], { prepare: true });
+            
+            if (result.rows.length > 0) {
+                const event = result.rows[0];
+                return {
+                    eventId: event.event_id,
+                    eventType: event.event_type,
+                    lineId: event.line_id,
+                    stopId: event.stop_id,
+                    timestamp: event.timestamp,
+                    status: event.status,
+                    reason: event.reason,
+                    delayMinutes: event.delay_minutes,
+                    weather: event.weather,
+                    scheduledTime: event.scheduled_time,
+                    actualTime: event.actual_time
+                };
+            }
+            return null;
+        } catch (error) {
+            console.error('Error fetching incident details:', error);
+            throw error;
+        }
+    }
+
     getAnalytics() {
         // Convert Maps to plain objects for API response
         const analytics = {
             delaysByLine: Object.fromEntries(this.analytics.delaysByLine),
+            cancelsByLine: Object.fromEntries(this.analytics.cancelsByLine),
             incidentsByStop: Object.fromEntries(this.analytics.incidentsByStop),
             serviceHealth: Object.fromEntries(this.analytics.serviceHealth)
         };

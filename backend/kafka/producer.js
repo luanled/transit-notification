@@ -105,17 +105,3 @@ module.exports = {
     sendEvent,
     initializeProducer // Exported for cases where you want to initialize during app startup
 };
-
-// Usage example:
-/*
-try {
-    await sendEvent({
-        eventType: 'DELAY',
-        lineId: 'line-1',
-        stopId: 'stop-123',
-        delayMinutes: 5
-    });
-} catch (error) {
-    console.error('Failed to send event:', error);
-}
-*/

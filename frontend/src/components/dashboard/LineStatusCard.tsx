@@ -14,10 +14,17 @@ interface LineDelayData {
   lastUpdated: string
 }
 
+interface LineCancelData {
+  count: number
+  cancellations: Array<{ timestamp: string, reason: string }>
+  lastCancellation: string
+}
+
 interface LineStatusCardProps {
   line: string
   health: LineHealthData
   delay?: LineDelayData
+  cancellations?: LineCancelData
 }
 
 const getLineColor = (line: string) => {
@@ -36,7 +43,7 @@ const getHealthStatus = (score: number) => {
   return { color: "text-red-600", label: "Poor" }
 }
 
-export function LineStatusCard({ line, health, delay }: LineStatusCardProps) {
+export function LineStatusCard({ line, health, delay, cancellations }: LineStatusCardProps) {
   return (
     <Card 
       className={cn(
@@ -73,6 +80,19 @@ export function LineStatusCard({ line, health, delay }: LineStatusCardProps) {
                   Recent Delays
                 </span>
                 <span className="font-medium">{delay.count}</span>
+              </div>
+            </div>
+          )}
+
+          {cancellations && cancellations.count > 0 && (
+            <div className="space-y-2 pt-2 border-t">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">
+                  Recent Cancellations
+                </span>
+                <span className="font-medium text-red-600">
+                  {cancellations.count}
+                </span>
               </div>
             </div>
           )}
