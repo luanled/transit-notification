@@ -11,7 +11,7 @@ const eventRoutes = require('./routes/eventRoutes');
 
 const app = express();
 const port = process.env.PORT || 3000;
-const interval = 5000;
+const interval = 10000;
 
 // Middleware setup
 app.use(cors({
@@ -99,6 +99,21 @@ app.post('/api/events', async (req, res) => {
       error: 'Failed to send event',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
+  }
+});
+
+app.post('/api/analytics/window/:minutes', (req, res) => {
+  try {
+    const minutes = parseInt(req.params.minutes);
+    if (isNaN(minutes) || minutes <= 0) {
+      return res.status(400).json({ error: 'Invalid time window' });
+    }
+
+    streamProcessor.setWindowSize(minutes);
+    res.status(200).json({ message: 'Time window updated successfully' });
+  } catch (error) {
+    console.error('Error updating time window:', error);
+    res.status(500).json({ error: 'Failed to update time window' });
   }
 });
 

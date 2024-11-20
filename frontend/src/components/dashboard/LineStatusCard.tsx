@@ -3,7 +3,11 @@ import { cn } from "@/lib/utils"
 
 interface LineHealthData {
   healthScore: number
-  events: Array<{ isHealthy: boolean; timestamp: string }>
+  events: Array<{ 
+    eventId: string
+    isHealthy: boolean
+    timestamp: string 
+  }>
   lastUpdated: string
 }
 
