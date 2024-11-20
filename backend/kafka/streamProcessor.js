@@ -69,12 +69,12 @@ class TransitStreamProcessor extends EventEmitter {
 
             // Monitor processing status
             setInterval(() => {
-                console.log('Current analytics state:', {
-                    messageCount: this.messageCount,
-                    delaysByLineCount: this.analytics.delaysByLine.size,
-                    incidentsByStopCount: this.analytics.incidentsByStop.size,
-                    serviceHealthCount: this.analytics.serviceHealth.size
-                });
+                // console.log('Current analytics state:', {
+                //     messageCount: this.messageCount,
+                //     delaysByLineCount: this.analytics.delaysByLine.size,
+                //     incidentsByStopCount: this.analytics.incidentsByStop.size,
+                //     serviceHealthCount: this.analytics.serviceHealth.size
+                // });
                 // Emit current state
                 this.emit('dataUpdated', this.getAnalytics());
             }, 30000);

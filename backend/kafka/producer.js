@@ -65,7 +65,7 @@ async function sendEvent(event) {
                     console.error(`Error sending event to ${topicName}:`, err);
                     reject(err);
                 } else {
-                    console.log(`Event sent successfully to ${topicName}:`, data);
+                    // console.log(`Event sent successfully to ${topicName}:`, data);
                     resolve(data);
                 }
             });

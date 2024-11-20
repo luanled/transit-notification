@@ -122,7 +122,12 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <IncidentsList incidents={data.analytics.incidentsByStop} />
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold tracking-tight">Recent Incidents</h2>
+        <div className="max-h-[500px] overflow-y-auto border rounded-lg p-4 shadow">
+          <IncidentsList incidents={data.analytics.incidentsByStop} />
+        </div>
+      </div>
       
       <SystemStats 
         messageCount={data.messageCount} 

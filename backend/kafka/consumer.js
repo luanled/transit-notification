@@ -103,12 +103,12 @@ function createNewConsumer() {
 
             await processEvent(event);
 
-            if (event.eventType === 'DELAY') {
-                console.log(`Alert! ${event.lineName} delayed at ${event.stopId}`);
-            }
-            if (event.eventType === 'CANCELLATION') {
-                console.log(`Alert! ${event.lineName} cancelled at ${event.stopId}`);
-            }
+            // if (event.eventType === 'DELAY') {
+            //     console.log(`Alert! ${event.lineName} delayed at ${event.stopId}`);
+            // }
+            // if (event.eventType === 'CANCELLATION') {
+            //     console.log(`Alert! ${event.lineName} cancelled at ${event.stopId}`);
+            // }
         } catch (error) {
             console.error('Error processing message:', error);
         }

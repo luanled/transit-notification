@@ -143,7 +143,7 @@ router.get('/latest', async (req, res) => {
 });
 
 // Get statistics
-router.get('/stats', async (req, res) => {
+router.get('/stats', async (req, res) => {z
     try {
         const lines = ['BLUE', 'GREEN', 'ORANGE'];
         
