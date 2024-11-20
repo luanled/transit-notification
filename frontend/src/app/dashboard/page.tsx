@@ -49,7 +49,7 @@ interface Analytics {
       healthScore: number
       events: Array<{ 
         eventId: string
-        isHealthy: boolean
+        type: string
         timestamp: string 
       }>
       lastUpdated: string
@@ -134,9 +134,11 @@ export default function DashboardPage() {
           </p>
         </div>
       </div>
+
       {data?.analytics && (
         <DashboardStats analytics={data.analytics} />
       )}
+
       <div className="grid gap-4 md:grid-cols-3">
         {Object.entries(data.analytics.serviceHealth).map(([line, health]) => (
           <LineStatusCard

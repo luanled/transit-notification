@@ -3,14 +3,18 @@ import { Activity, AlertTriangle, LineChart, CircleOff, XCircle } from "lucide-r
 
 interface DashboardStatsProps {
   analytics: {
-    delaysByLine: Record<string, { count: number }>
-    cancelsByLine: Record<string, { count: number }>
+    delaysByLine: Record<string, {
+      count: number
+    }>,
+    cancelsByLine: Record<string, {
+      count: number
+    }>,
     serviceHealth: Record<string, {
       healthScore: number
-      events: Array<{
+      events: Array<{ 
         eventId: string
-        isHealthy: boolean
-        timestamp: string
+        type: string
+        timestamp: string 
       }>
       lastUpdated: string
     }>
