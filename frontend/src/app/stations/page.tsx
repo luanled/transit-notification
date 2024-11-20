@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -134,6 +134,7 @@ export default function StationsPage() {
   const [events, setEvents] = useState<StationEvents | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [eventSource, setEventSource] = useState<EventSource | null>(null)
 
   const getStationsForLine = (lineId: string) => {
     return Object.entries(STATION_TO_LINE)
@@ -147,38 +148,56 @@ export default function StationsPage() {
     setSelectedStation("")
     setEvents(null)
     setError(null)
+    
+    if (eventSource) {
+      eventSource.close()
+      setEventSource(null)
+    }
   }
 
   const handleStationChange = async (stationId: string) => {
     setSelectedStation(stationId)
     if (!stationId) return
 
+    if (eventSource) {
+      eventSource.close()
+    }
+
     setLoading(true)
     setError(null)
-    
-    try {
-      const response = await fetch(
-        `http://localhost:3000/api/events/station/${encodeURIComponent(stationId)}`,
-        {
-          headers: {
-            'Accept': 'application/json'
-          }
-        }
-      )
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch station events: ${response.statusText}`)
+
+    const newEventSource = new EventSource(
+      `http://localhost:3000/api/events/station/${encodeURIComponent(stationId)}/stream`
+    )
+
+    newEventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        setEvents(data)
+        setLoading(false)
+      } catch (err) {
+        console.error("Error parsing SSE data:", err)
       }
-      
-      const data = await response.json()
-      setEvents(data)
-    } catch (error) {
-      console.error("Failed to fetch station events:", error)
-      setError("Failed to load station events. Please try again later.")
-    } finally {
-      setLoading(false)
     }
+
+    newEventSource.onerror = (err) => {
+      console.error("SSE Error:", err)
+      setError("Failed to connect to server")
+      setLoading(false)
+      newEventSource.close()
+    }
+
+    setEventSource(newEventSource)
   }
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (eventSource) {
+        eventSource.close()
+      }
+    }
+  }, [eventSource])
 
   return (
     <main className="flex-1 container py-6">

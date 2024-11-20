@@ -176,4 +176,55 @@ router.get('/stats', async (req, res) => {z
     }
 });
 
+router.get('/station/:stopId/stream', async (req, res) => {
+    const { stopId } = req.params;
+  
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': 'http://localhost:8080'
+    });
+  
+    const sendUpdate = async () => {
+      try {
+        // Use a simpler query without ORDER BY
+        const query = `
+          SELECT * FROM transit_system.transit_events 
+          WHERE stop_id = ?
+          ALLOW FILTERING
+        `;
+        const result = await cassandraService.client.execute(query, [stopId], { prepare: true });
+        
+        // Sort the results in memory
+        const sortedEvents = result.rows
+          .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+          .slice(0, 10);
+        
+        const data = {
+          station: stopId,
+          count: sortedEvents.length,
+          events: sortedEvents.map(row => ({
+            event_id: row.event_id,
+            event_type: row.event_type,
+            timestamp: row.timestamp,
+            delay_minutes: row.delay_minutes,
+            reason: row.reason,
+            status: row.status
+          }))
+        };
+  
+        res.write(`data: ${JSON.stringify(data)}\n\n`);
+      } catch (error) {
+        console.error('Error fetching station events:', error);
+      }
+    };
+  
+    await sendUpdate();
+    const intervalId = setInterval(sendUpdate, 5000);
+  
+    req.on('close', () => {
+      clearInterval(intervalId);
+    });
+  });
 module.exports = router;
