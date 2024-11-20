@@ -27,7 +27,7 @@ export default function RootLayout({
           <footer className="border-t bg-background">
             <div className="container flex h-14 items-center">
               <p className="text-sm text-foreground">
-                Built with Next.js and shadcn
+                
               </p>
             </div>
           </footer>

@@ -11,7 +11,7 @@ const eventRoutes = require('./routes/eventRoutes');
 
 const app = express();
 const port = process.env.PORT || 3000;
-const interval = 10000;
+const interval = 5000;
 
 // Middleware setup
 app.use(cors({

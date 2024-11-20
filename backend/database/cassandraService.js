@@ -81,7 +81,7 @@ class CassandraService {
                 new Date(event.timestamp)
             ];
             await this.client.execute(this.insertQuery, params, { prepare: true });
-            console.log('Insert successful for event:', event.eventId);
+            // console.log('Insert successful for event:', event.eventId);
 
             return true;
         } catch (error) {
