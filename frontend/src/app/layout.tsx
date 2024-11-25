@@ -3,6 +3,7 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { cn } from "@/lib/utils"
 import { SiteHeader } from "@/components/site-header"
+import { ToastProvider } from "@/components/ui/toast"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -18,7 +19,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn("min-h-screen bg-background antialiased", inter.className)}>
+    <body className={cn("min-h-screen bg-background antialiased", inter.className)}>
+      <ToastProvider>
         <div className="relative flex min-h-screen flex-col">
           <SiteHeader />
           <main className="flex-1">
@@ -32,7 +34,8 @@ export default function RootLayout({
             </div>
           </footer>
         </div>
-      </body>
-    </html>
+      </ToastProvider>
+    </body>
+  </html>
   )
 }

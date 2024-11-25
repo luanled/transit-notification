@@ -1,7 +1,5 @@
 import Link from "next/link"
-import Image from "next/image"
 import { Button } from "@/components/ui/button"
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,11 +29,11 @@ export function SiteHeader() {
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard">Dashboard</Link>
                 </DropdownMenuItem>
-                {/* <DropdownMenuItem asChild>
-                  <Link href="/alerts">Alerts</Link>
-                </DropdownMenuItem> */}
                 <DropdownMenuItem asChild>
                   <Link href="/stations">Stations</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/report">Report Incident</Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -56,22 +54,19 @@ export function SiteHeader() {
             >
               Dashboard
             </Link>
-            {/* <Link
-              href="/alerts"
-              className="text-sm text-gray-700 hover:text-gray-900"
-            >
-              Alerts
-            </Link> */}
             <Link
               href="/stations"
               className="text-sm text-gray-700 hover:text-gray-900"
             >
               Stations
             </Link>
+            <Link
+              href="/report"
+              className="text-sm font-medium text-blue-600 hover:text-blue-800"
+            >
+              Report Incident
+            </Link>
           </div>
-          {/* <Button variant="ghost" className="text-gray-700 hover:text-gray-900">
-            Sign In
-          </Button> */}
         </nav>
       </div>
     </header>

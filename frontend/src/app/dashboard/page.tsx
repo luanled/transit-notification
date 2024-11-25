@@ -6,6 +6,7 @@ import { IncidentsList } from "@/components/dashboard/IncidentsList"
 import { SystemStats } from "@/components/dashboard/SystemStats"
 import { TimeFilter } from "@/components/dashboard/TimeFilter"
 import { DashboardStats } from "@/components/dashboard/DashboardStats"
+import IncidentReportForm from "@/components/incident-report/IncidentReportForm"
 
 type EventType = 'DELAY' | 'CANCELLATION';
 
