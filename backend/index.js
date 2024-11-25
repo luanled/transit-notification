@@ -7,8 +7,9 @@ const consumer = require('./kafka/consumer');
 const eventGenerator = require('./mock/generateEvent');
 const streamProcessor = require('./kafka/streamProcessor');
 const cassandraService = require('./database/cassandraService');
+const subscriptionService = require('./services/subscriptionService');
 const eventRoutes = require('./routes/eventRoutes');
-
+const subscriptionRoutes = require('./routes/subscriptionRoutes');
 const app = express();
 const port = process.env.PORT || 3000;
 const interval = 10000;
@@ -117,6 +118,8 @@ app.post('/api/analytics/window/:minutes', (req, res) => {
   }
 });
 
+app.use('/api/subscriptions', subscriptionRoutes);
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -188,6 +191,8 @@ const server = app.listen(port, async () => {
     await streamProcessor.start();
     console.log('Stream processor started');
 
+    await subscriptionService.setup();
+    
     if (process.env.NODE_ENV === 'development') {
       eventGenerator.startGenerator(interval);
       console.log('Mock event generator started');

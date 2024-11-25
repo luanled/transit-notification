@@ -18,6 +18,11 @@ class CassandraService {
                 scheduled_time, actual_time, delay_minutes, status, 
                 reason, weather, timestamp
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+        this.insertSubscriptionQuery = `
+            INSERT INTO transit_system.station_subscriptions (
+                email, station, line, subscribed_at
+            ) VALUES (?, ?, ?, ?)`;
     }
 
     async setup() {
@@ -33,8 +38,8 @@ class CassandraService {
             await this.client.execute(keyspaceQuery);
             console.log('Keyspace verified');
 
-            // Verify table
-            const tableQuery = `
+            // Verify events table
+            const eventsTableQuery = `
                 CREATE TABLE IF NOT EXISTS transit_system.transit_events (
                     event_id text,
                     event_type text,
@@ -50,13 +55,29 @@ class CassandraService {
                     timestamp timestamp,
                     PRIMARY KEY ((line_id), timestamp, event_id)
                 )`;
-            await this.client.execute(tableQuery);
-            console.log('Table verified');
+            await this.client.execute(eventsTableQuery);
+            console.log('Events table verified');
 
-            // Check if table exists and is empty
-            const countQuery = 'SELECT COUNT(*) FROM transit_system.transit_events';
-            const result = await this.client.execute(countQuery);
-            console.log('Current event count:', result.rows[0].count);
+            // Verify subscriptions table
+            const subscriptionsTableQuery = `
+                CREATE TABLE IF NOT EXISTS transit_system.station_subscriptions (
+                    email text,
+                    station text,
+                    line text,
+                    subscribed_at timestamp,
+                    PRIMARY KEY ((station), email)
+                )`;
+            await this.client.execute(subscriptionsTableQuery);
+            console.log('Subscriptions table verified');
+
+            // Check if tables exist and are empty
+            const eventCountQuery = 'SELECT COUNT(*) FROM transit_system.transit_events';
+            const eventResult = await this.client.execute(eventCountQuery);
+            console.log('Current event count:', eventResult.rows[0].count);
+
+            const subscriptionCountQuery = 'SELECT COUNT(*) FROM transit_system.station_subscriptions';
+            const subscriptionResult = await this.client.execute(subscriptionCountQuery);
+            console.log('Current subscription count:', subscriptionResult.rows[0].count);
 
         } catch (error) {
             console.error('Error setting up Cassandra:', error);
@@ -81,11 +102,58 @@ class CassandraService {
                 new Date(event.timestamp)
             ];
             await this.client.execute(this.insertQuery, params, { prepare: true });
-            // console.log('Insert successful for event:', event.eventId);
-
             return true;
         } catch (error) {
             console.error('Error storing event in Cassandra:', error);
+            throw error;
+        }
+    }
+
+    async addSubscription(email, station, line) {
+        try {
+            const params = [
+                email,
+                station,
+                line,
+                new Date()
+            ];
+            await this.client.execute(this.insertSubscriptionQuery, params, { prepare: true });
+            return true;
+        } catch (error) {
+            console.error('Error adding subscription:', error);
+            throw error;
+        }
+    }
+
+    async getSubscriptionsForStation(station) {
+        try {
+            const query = 'SELECT * FROM transit_system.station_subscriptions WHERE station = ?';
+            const result = await this.client.execute(query, [station], { prepare: true });
+            return result.rows;
+        } catch (error) {
+            console.error('Error getting subscriptions for station:', error);
+            throw error;
+        }
+    }
+
+    async removeSubscription(email, station) {
+        try {
+            const query = 'DELETE FROM transit_system.station_subscriptions WHERE station = ? AND email = ?';
+            await this.client.execute(query, [station, email], { prepare: true });
+            return true;
+        } catch (error) {
+            console.error('Error removing subscription:', error);
+            throw error;
+        }
+    }
+
+    async getSubscription(email, station) {
+        try {
+            const query = 'SELECT * FROM transit_system.station_subscriptions WHERE station = ? AND email = ?';
+            const result = await this.client.execute(query, [station, email], { prepare: true });
+            return result.rows[0] || null;
+        } catch (error) {
+            console.error('Error getting subscription:', error);
             throw error;
         }
     }

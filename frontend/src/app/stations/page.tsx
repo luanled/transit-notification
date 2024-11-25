@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Clock, XCircle, Train } from "lucide-react"
+import StationSubscription from '@/components/stations/StationSubscription'
 
 interface TransitEvent {
   event_id: string
@@ -201,10 +202,10 @@ export default function StationsPage() {
 
   return (
     <main className="flex-1 container py-6">
-      <Tabs defaultValue="map" className="space-y-6">
+      <Tabs defaultValue="search" className="space-y-6">
         <TabsList>
+          <TabsTrigger value="search">Station & Subscribe</TabsTrigger>
           <TabsTrigger value="map">System Map</TabsTrigger>
-          <TabsTrigger value="search">Search Stations</TabsTrigger>
         </TabsList>
 
         <TabsContent value="map">
@@ -259,6 +260,17 @@ export default function StationsPage() {
             </Select>
           </div>
 
+          {selectedStation && selectedLine && (
+            <div className="flex justify-center">
+              <div className="w-full max-w-lg">
+                <StationSubscription 
+                  station={selectedStation} 
+                  line={selectedLine as 'BLUE' | 'GREEN' | 'ORANGE'} 
+                />
+              </div>
+            </div>
+          )}
+
           {loading && (
             <div className="text-center py-8 text-muted-foreground">
               Loading station events...
@@ -274,40 +286,44 @@ export default function StationsPage() {
           {events?.events && events.events.length > 0 && (
             <div className="space-y-4">
               <h2 className="text-xl font-semibold">Recent Events</h2>
-              {events.events.map((event) => (
-                <Card key={event.event_id}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      {getEventIcon(event.event_type)}
-                      {event.event_type}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid gap-2">
-                      <div>
-                        <span className="font-medium">Time: </span>
-                        {new Date(event.timestamp).toLocaleString()}
-                      </div>
-                      
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {events.events.map((event) => (
+                  <Card key={event.event_id} className="hover:shadow-md transition-shadow">
+                    <CardHeader className="p-4">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        {getEventIcon(event.event_type)}
+                        {event.event_type}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
+                      <div className="space-y-2 text-sm">
                         <div>
-                          <span className="font-medium">Delay: </span>
-                          {event.delay_minutes} minutes
+                          <span className="font-medium">Time: </span>
+                          {new Date(event.timestamp).toLocaleString()}
                         </div>
-                      
-                      {event.reason && (
+                        {event.delay_minutes !== undefined && (
+                          <div>
+                            <span className="font-medium">Delay: </span>
+                            {event.delay_minutes} minutes
+                          </div>
+                        )}
+                        {event.reason && (
+                          <div>
+                            <span className="font-medium">Reason: </span>
+                            {event.reason}
+                          </div>
+                        )}
                         <div>
-                          <span className="font-medium">Reason: </span>
-                          {event.reason}
+                          <span className="font-medium">Status: </span>
+                          <span className={event.status === 'ACTIVE' ? 'text-green-600' : 'text-red-600'}>
+                            {event.status}
+                          </span>
                         </div>
-                      )}
-                      <div>
-                        <span className="font-medium">Status: </span>
-                        {event.status}
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
           )}
 

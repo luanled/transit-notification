@@ -29,7 +29,7 @@ export default function RootLayout({
           <footer className="border-t bg-background">
             <div className="container flex h-14 items-center">
               <p className="text-sm text-foreground">
-                
+              © 2024 RailWatch. All rights reserved.
               </p>
             </div>
           </footer>

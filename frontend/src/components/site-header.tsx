@@ -58,11 +58,11 @@ export function SiteHeader() {
               href="/stations"
               className="text-sm text-gray-700 hover:text-gray-900"
             >
-              Stations
+              Stations & Subscribe
             </Link>
             <Link
               href="/report"
-              className="text-sm font-medium text-blue-600 hover:text-blue-800"
+              className="text-sm text-gray-700 hover:text-gray-900"
             >
               Report Incident
             </Link>

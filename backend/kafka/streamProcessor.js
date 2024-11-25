@@ -1,7 +1,7 @@
 const kafka = require('kafka-node');
 const EventEmitter = require('events');
 const cassandraService = require('../database/cassandraService');
-
+const subscriptionService = require('../services/subscriptionService');
 class TransitStreamProcessor extends EventEmitter {
     constructor() {
         super();
@@ -147,7 +147,7 @@ class TransitStreamProcessor extends EventEmitter {
         }
     }
 
-    processMessage(message) {
+    async processMessage(message) {
         try {
             const event = JSON.parse(message.value);
 
@@ -166,6 +166,11 @@ class TransitStreamProcessor extends EventEmitter {
             // Process incidents
             if (['DELAY', 'CANCELLATION'].includes(event.eventType)) {
                 this.processIncident(event);
+                try {
+                    await subscriptionService.processEvent(event);
+                } catch (error) {
+                    console.error('Error processing notifications:', error);
+                }
             }
 
             // Update service health
@@ -176,6 +181,7 @@ class TransitStreamProcessor extends EventEmitter {
         } catch (error) {
             console.error('Error processing message:', error);
         }
+        
     }
 
     processDelay(event) {
