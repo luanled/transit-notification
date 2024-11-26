@@ -8,7 +8,7 @@ import { ToastProvider } from "@/components/ui/toast"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Transit System",
+  title: "RailWatch",
   description: "Real-time transit monitoring system",
 }
 
