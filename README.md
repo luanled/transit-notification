@@ -129,3 +129,5 @@ docker-compose up -d --build
 # Remove volumes (will delete all data)
 docker-compose down -v
 ```
+
+![Build Status](./successful.png)
