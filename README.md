@@ -131,3 +131,8 @@ docker-compose down -v
 ```
 
 ![Build Status](./successful.png)
+
+## Screenshots
+![Landing Page](./landing.png)
+![Dashboard](./dashboard.png)
+![Form](./reportform.png)
